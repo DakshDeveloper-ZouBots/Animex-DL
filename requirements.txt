@@ -1,0 +1,6 @@
+wzgram
+curl_cffi
+pymongo
+motor
+asyncio
+aiohttp
