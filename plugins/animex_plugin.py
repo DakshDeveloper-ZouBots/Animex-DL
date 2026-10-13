@@ -31,10 +31,18 @@ async def animex_search(client: Client, message: Message):
     ])
     
     caption = Dead.ANIMEX_CARD.format(title=title, anime_id=anime_id, episodes=anime.get("episodeCount", "N/A"))
-    if anime.get("coverImage"):
-        await message.reply_photo(photo=anime["coverImage"], caption=caption, reply_markup=buttons)
+    cover_url = anime.get("coverImage")
+    
+    try:
+        if cover_url:
+            # Pyrogram accepts HTTP URLs directly for send_photo if passed properly, 
+            # otherwise fallback to text message if it fails local path checks.
+            await message.reply_photo(photo=cover_url, caption=caption, reply_markup=buttons)
+        else:
+            await message.reply_text(caption, reply_markup=buttons)
         await status.delete()
-    else:
+    except Exception:
+        # Fallback if image URL parsing fails
         await status.edit_text(caption, reply_markup=buttons)
 
 @Client.on_callback_query(filters.regex(r"^axep\|"))
@@ -49,7 +57,7 @@ async def animex_episode_callback(client: Client, callback: CallbackQuery):
     quality_buttons = []
     row = []
     for src in sources:
-        q = src.get("quality", "720p") # e.g. 480p, 720p, 1080p
+        q = src.get("quality", "720p")
         row.append(InlineKeyboardButton(f"📥 {q}", callback_data=f"axdl|{anime_id}|{ep_num}|{q}"))
         if len(row) == 2:
             quality_buttons.append(row)
@@ -57,7 +65,6 @@ async def animex_episode_callback(client: Client, callback: CallbackQuery):
     if row:
         quality_buttons.append(row)
         
-    # Batch download option (Ep 1-12)
     quality_buttons.append([
         InlineKeyboardButton("📦 Batch Download (Ep 1–12)", callback_data=f"axbatch|{anime_id}|1|12|720p")
     ])
